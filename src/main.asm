@@ -1,7 +1,6 @@
 L_BUTTON    equ 0x0100
 R_BUTTON    equ 0x0200
-TRIANGLE    equ 0x1000
-SQUARE      equ 0x8000
+SELECT      equ 0x0001
 
 .createfile "../bin/itemset.bin", LOAD_ADD - 8
 .word LOAD_ADD
@@ -234,17 +233,24 @@ SQUARE      equ 0x8000
 .func input
     bne     v0, zero, @@circle
     nop
+
+    la      at, CONTROL_HOLD
+    lhu     at, 0x0(at)
+    
+    andi    v0, at, SELECT
+    beq     v0, zero, @@load_input
+    andi    v0, s1, L_BUTTON
+    bne     v0, zero, @@save_set1
+    nop
+    andi    v0, s1, R_BUTTON
+    bne     v0, zero, @@save_set2
+    nop
+@@load_input:
     andi    v0, s1, L_BUTTON
     bne     v0, zero, @@load_set1
     nop
     andi    v0, s1, R_BUTTON
     bne     v0, zero, @@load_set2
-    nop
-    andi    v0, s1, SQUARE
-    bne     v0, zero, @@save_set1
-    nop
-    andi    v0, s1, TRIANGLE
-    bne     v0, zero, @@save_set2
     nop
     b       @@none
     nop
@@ -340,7 +346,7 @@ SET_SAVED_MSG:
 SET_LOADED_MSG:
 .asciiz "Item Set Loaded!"
 ITEM_SET_FILE:
-.asciiz "ms0:/P3RDML/ITEM_SET.BIN"
+.asciiz "ms0:/" + GAME + "/ITEM_SET.BIN"
 .align 4
 ITEM_SET_1:
 .area 24*4, 0
@@ -408,6 +414,4 @@ ITEM_SET_2:
 .word 8 | 0x80000000
     j       read_sets
     nop
-.word -1
-.word 0
 .close
