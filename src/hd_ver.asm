@@ -20,7 +20,7 @@ PSP_O_CREAT     equ 0x00000200
 sceIoWrite      equ 0x08965690
 sceIoClose      equ 0x089656B0
 sceIoGetStat    equ 0x089656B8
-sceIoOpen       equ 0x089656C0
+sceIoOpen       equ 0x089656D0
 sceIoRead       equ 0x089656A0
 
 GAME            equ "P3RDHDML"
