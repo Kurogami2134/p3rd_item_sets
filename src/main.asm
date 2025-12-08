@@ -43,9 +43,9 @@ SELECT      equ 0x0001
 .func store_all
     addiu   sp, sp, -0x4
     sw      ra, 0x0(sp)
-    la      t0, ITEM_POUCH
+    la      t0, ITEM_POUCH1
 @@loop:
-    addiu   a0, t0, -(ITEM_POUCH & 0xFFFF)
+    addiu   a0, t0, -(ITEM_POUCH1 & 0xFFFF)
     andi    a0, a0, 0xFFFF
     slti    a0, a0, 24*4
     beq     a0, zero, @@ret
@@ -100,7 +100,7 @@ SELECT      equ 0x0001
     nop
 .endfunc
 .func load_set
-    addiu   sp, sp, -0x20
+    addiu   sp, sp, -0x24
     sw      ra, 0x00(sp)
     sw      a0, 0x04(sp)
     sw      a1, 0x08(sp)
@@ -109,12 +109,14 @@ SELECT      equ 0x0001
     sw      t0, 0x14(sp)
     sw      t1, 0x18(sp)
     sw      t2, 0x1C(sp)
+    sw      t3, 0x20(sp)
     bal     store_all
     nop
-    lw      t1, 0x20(sp) ;  load set address - 4
-    li      t2, ITEM_POUCH - 4
+    lw      t1, 0x24(sp) ;  load set address - 4
+    li      t2, ITEM_POUCH1 - 4
+    li      t3, ITEM_POUCH2 - 4
 @@loop:
-    addiu   a0, t2, -((ITEM_POUCH - 4) & 0xFFFF)
+    addiu   a0, t2, -((ITEM_POUCH1 - 4) & 0xFFFF)
     andi    a0, a0, 0xFFFF
     slti    a0, a0, 24*4
     beq     a0, zero, @@ret
@@ -122,9 +124,10 @@ SELECT      equ 0x0001
 
     addiu   t1, t1, 4
     addiu   t2, t2, 4
+    addiu   t3, t3, 4
     lh      a0, 0x0(t1)
-    beq     a0, zero, @@loop
-    nop
+    beql    a0, zero, @@loop
+    sw      zero, 0x0(t3)
     bal     remove_item
     lh      a1, 0x2(t1)
     
@@ -134,8 +137,10 @@ SELECT      equ 0x0001
     nop
 
     sh      a0, 0x0(t2)
-    b       @@loop
     sh      a3, 0x2(t2)
+    sh      a0, 0x0(t3)
+    b       @@loop
+    sh      a3, 0x2(t3)
 @@ret:
     lw      ra, 0x00(sp)
     lw      a0, 0x04(sp)
@@ -145,15 +150,16 @@ SELECT      equ 0x0001
     lw      t0, 0x14(sp)
     lw      t1, 0x18(sp)
     lw      t2, 0x1C(sp)
+    sw      t3, 0x20(sp)
     jr      ra
-    addiu   sp, sp, 0x20
+    addiu   sp, sp, 0x24
 .endfunc
 .func save_set ;  a0: item set address
     addiu   sp, sp, -0xC
     sw      a0, 0x0(sp)
     sw      a1, 0x4(sp)
     sw      a2, 0x8(sp)
-    li      at, ITEM_POUCH
+    li      at, ITEM_POUCH1
     li      a1, 0
 @@loop:
     slti    a2, a1, 48
