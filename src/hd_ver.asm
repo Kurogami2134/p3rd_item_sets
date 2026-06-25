@@ -2,7 +2,6 @@
 
 .relativeinclude on
 
-LOAD_ADD        equ 0x08802060;
 ITEM_BOX        equ 0x09F52CF4
 ITEM_POUCH1     equ 0x09FAF7FE
 ITEM_POUCH2     equ 0x09F54464

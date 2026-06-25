@@ -1,10 +1,24 @@
+ITEM_SET_1      equ ITEM_SET_1_ - MOD_DATA
+ITEM_SET_2      equ ITEM_SET_2_ - MOD_DATA
+SET_SAVED_MSG   equ SET_SAVED_MSG_ - MOD_DATA
+SET_LOADED_MSG  equ SET_LOADED_MSG_ - MOD_DATA
+ITEM_SET_FILE   equ ITEM_SET_FILE_ - MOD_DATA
+
 L_BUTTON    equ 0x0100
 R_BUTTON    equ 0x0200
 SELECT      equ 0x0001
 
-.createfile "../bin/itemset.bin", LOAD_ADD - 8
-.word LOAD_ADD
-.word @main_block_end - LOAD_ADD
+.createfile "../bin/itemset.bin", 0
+
+.word 1 ;  Main Block
+.word (@main_block_end - @main_block) | 0x80000000
+.ascii "ISET"
+@main_block:
+.func init
+    b       read_sets
+    nop
+.endfunc
+
 .func store_item ;  a0 item id, a1 quantity
     la      at, ITEM_BOX
 @@loop:
@@ -40,6 +54,7 @@ SELECT      equ 0x0001
     jr      ra
     nop
 .endfunc
+
 .func store_all
     addiu   sp, sp, -0x4
     sw      ra, 0x0(sp)
@@ -65,6 +80,7 @@ SELECT      equ 0x0001
     jr      ra
     addiu   sp, sp, 0x4
 .endfunc
+
 .func remove_item ;  a0 item id, a1 quantity
     la      at, ITEM_BOX
 @@loop:
@@ -99,6 +115,7 @@ SELECT      equ 0x0001
     jr      ra
     nop
 .endfunc
+
 .func load_set
     addiu   sp, sp, -0x24
     sw      ra, 0x00(sp)
@@ -154,6 +171,7 @@ SELECT      equ 0x0001
     jr      ra
     addiu   sp, sp, 0x24
 .endfunc
+
 .func save_set ;  a0: item set address
     addiu   sp, sp, -0xC
     sw      a0, 0x0(sp)
@@ -177,12 +195,20 @@ SELECT      equ 0x0001
     j       write_sets
     addiu   sp, sp, 0xC
 .endfunc
+
 .func read_sets
-    addiu   sp, sp, -0x8
+    addiu   sp, sp, -0xC
     sw      ra, 0x0(sp)
     sw      s0, 0x4(sp)
+    sw      s1, 0x8(sp)
+
+    bal     @@get_offset
+    nop
+@@get_offset:
+    addiu   s1, ra, (MOD_DATA - @@get_offset)
+    
     ; check if file exists
-    la      a0, ITEM_SET_FILE
+    addiu   a0, s1, ITEM_SET_FILE
 
     jal     sceIoGetStat
     addiu   a1, sp, -0x60
@@ -191,14 +217,14 @@ SELECT      equ 0x0001
     bne     at, zero, @@ret
     nop
     
-    li      a0, ITEM_SET_FILE
+    addiu   a0, s1, ITEM_SET_FILE
     li      a1, PSP_O_RDONLY
     jal     sceIoOpen
     li      a2, 0x1B6
     move    s0, v0
     ; save sets
     move    a0, v0
-    la      a1, ITEM_SET_1
+    addiu   a1, s1, ITEM_SET_1
     li      a2, 24*4*2
     jal     sceIoRead
     li      a3, 0x0
@@ -208,22 +234,30 @@ SELECT      equ 0x0001
 @@ret:
     lw      ra, 0x0(sp)
     lw      s0, 0x4(sp)
+    lw      s1, 0x8(sp)
     jr      ra
-    addiu   sp, sp, 8
+    addiu   sp, sp, 0xC
 .endfunc
+
 .func write_sets
     ; open file
-    addiu   sp, sp, -0x8
+    addiu   sp, sp, -0xC
     sw      ra, 0x4(sp)
+    sw      s0, 0x8(sp)
 
-    li      a0, ITEM_SET_FILE
+    bal     @@get_offset
+    nop
+@@get_offset:
+    addiu   s0, ra, (MOD_DATA - @@get_offset)
+
+    addiu   a0, s0, ITEM_SET_FILE
     li      a1, PSP_O_CREAT | PSP_O_WRONLY
     jal     sceIoOpen
     li      a2, 0x1B6
     sw      v0, 0x0(sp)
     ; save sets
     lw      a0, 0x0(sp)
-    la      a1, ITEM_SET_1
+    addiu   a1, s0, ITEM_SET_1
     li      a2, 24*4*2
     jal     sceIoWrite
     li      a3, 0x0
@@ -233,9 +267,11 @@ SELECT      equ 0x0001
     nop
 @@ret:
     lw      ra, 0x4(sp)
+    lw      s0, 0x8(sp)
     jr      ra
-    addiu   sp, sp, 8
+    addiu   sp, sp, 0xC
 .endfunc
+
 .func input
     bne     v0, zero, @@circle
     nop
@@ -264,17 +300,32 @@ SELECT      equ 0x0001
     j       CIRCLE_PRESS
     nop
 @@save_set1:
-    li      a0, ITEM_SET_1
+    move    at, ra
+    bal     @@get_offset_1
+    nop
+@@get_offset_1:
+    addiu   a0, ra, (MOD_DATA - @@get_offset_1) + ITEM_SET_1
+    move    ra, at
+
     b       @@save_set
     nop
 @@save_set2:
-    li      a0, ITEM_SET_2
+    move    at, ra
+    bal     @@get_offset_2
+    nop
+@@get_offset_2:
+    addiu   a0, ra, (MOD_DATA - @@get_offset_2) + ITEM_SET_2
+    move    ra, at
+
 @@save_set:
     addiu   sp, sp, -0x8
     sw      ra, 0x0(sp)
     sw      a0, 0x4(sp)
 
-    la      a0, SET_SAVED_MSG
+    bal     @@get_offset_3
+    nop
+@@get_offset_3:
+    addiu   a0, ra, (MOD_DATA - @@get_offset_3) + SET_SAVED_MSG
     bal     show_msg
     nop
 
@@ -285,17 +336,31 @@ SELECT      equ 0x0001
     b       @@none
     addiu   sp, sp, 0x8
 @@load_set1:
-    la      at, ITEM_SET_1 - 4
+    move    v1, ra
+    bal     @@get_offset_4
+    nop
+@@get_offset_4:
+    addiu   at, ra, (MOD_DATA - @@get_offset_4) + ITEM_SET_1 - 4
+    move    ra, v1
     b       @@load_set
     nop
 @@load_set2:
-    la      at, ITEM_SET_2 - 4
+    
+    move    v1, ra
+    bal     @@get_offset_5
+    nop
+@@get_offset_5:
+    addiu   at, ra, (MOD_DATA - @@get_offset_5) + ITEM_SET_2 - 4
+    move    ra, v1
 @@load_set:
     addiu   sp, sp, -0x8
     sw      at, 0x0(sp)
     sw      ra, 0x4(sp)
 
-    la      a0, SET_LOADED_MSG
+    bal     @@get_offset_6
+    nop
+@@get_offset_6:
+    addiu   a0, ra, (MOD_DATA - @@get_offset_6) + SET_LOADED_MSG
     bal     show_msg
     nop
 
@@ -306,8 +371,6 @@ SELECT      equ 0x0001
     b       @@none
     addiu   sp, sp, 0x8
 
-@@save:
-    la      at, save_set
 @@call:
     addiu   sp, sp, -4
     sw      ra, 0x0(sp)
@@ -319,6 +382,7 @@ SELECT      equ 0x0001
     j       NO_PRESS
     nop
 .endfunc
+
 .func show_msg
     addiu   sp, sp, -0x8
     sw      ra, 0x0(sp)
@@ -347,14 +411,16 @@ SELECT      equ 0x0001
     jr      ra
     addiu   sp, sp, 0x8
 .endfunc
-SET_SAVED_MSG:
+
+MOD_DATA:
+SET_SAVED_MSG_:
 .asciiz "Item Set Saved!"
-SET_LOADED_MSG:
+SET_LOADED_MSG_:
 .asciiz "Item Set Loaded!"
-ITEM_SET_FILE:
+ITEM_SET_FILE_:
 .asciiz "ms0:/" + GAME + "/ITEM_SET.BIN"
 .align 4
-ITEM_SET_1:
+ITEM_SET_1_:
 .area 24*4, 0
 
 .halfword 0x0008
@@ -407,17 +473,16 @@ ITEM_SET_1:
 .halfword 0x0001
 
 .endarea
-ITEM_SET_2:
+ITEM_SET_2_:
 .area 24*4, 0
 .endarea
 
 @main_block_end:
+
+.word 2 ;  Hook Block
 .word HOOK
-.word 8
-    j       input
-    nop
-.word @main_block_end
-.word 8 | 0x80000000
-    j       read_sets
-    nop
+.halfword   input - @main_block
+.byte 0x08
+.byte 1
+
 .close
