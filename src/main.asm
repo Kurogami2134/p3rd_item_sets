@@ -22,10 +22,9 @@ SELECT      equ 0x0001
 .func store_item ;  a0 item id, a1 quantity
     la      at, ITEM_BOX
 @@loop:
-    andi    a2, at, 0xFFFF
-    srl     a2, a2, 2
-    slti    a2, a2, (ITEM_BOX/4 + 1000) & 0xFFFF
-    beq     a2, zero, @@ret
+    li      a2, ITEM_BOX + 4000
+    slt     a2, a2, at
+    bne     a2, zero, @@ret
     nop
     lh      a2, 0x0(at)  ; id
     lh      a3, 0x2(at)  ; qty
@@ -86,10 +85,9 @@ SELECT      equ 0x0001
 @@loop:
     beq     a1, zero, @@ret
     nop
-    andi    a2, at, 0xFFFF
-    srl     a2, a2, 2
-    slti    a2, a2, (ITEM_BOX/4 + 1000) & 0xFFFF
-    beq     a2, zero, @@ret
+    li      a2, ITEM_BOX + 4000
+    slt     a2, a2, at
+    bne     a2, zero, @@ret
     nop
     lh      a2, 0x0(at)  ; id
     lh      a3, 0x2(at)  ; qty
