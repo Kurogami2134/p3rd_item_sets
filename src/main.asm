@@ -190,7 +190,7 @@ SELECT      equ 0x0001
     lw      a0, 0x0(sp)
     lw      a1, 0x4(sp)
     lw      a2, 0x8(sp)
-    j       write_sets
+    b       write_sets
     addiu   sp, sp, 0xC
 .endfunc
 
