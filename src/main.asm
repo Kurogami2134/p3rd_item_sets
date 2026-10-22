@@ -39,11 +39,13 @@ SELECT      equ 0x0001
 @@store:
     sh      a0, 0x0(at)
     addu    a1, a1, a3 ;  add quantities
-    slti    a2, a1, 100
-    bne     a2, zero, @@normal_store ;  if item quantity exceed 99, continues to search
+    lhu     a2, MAX_STACK
+    addiu   a2, a2, 1
+    slt     a2, a1, a2
+    bne     a2, zero, @@normal_store ;  if item quantity exceed MAX_STACK, continues to search
     nop
-    addiu   a1, a1, -99
-    li      a2, 99
+    lhu     a2, MAX_STACK
+    subu    a1, a1, a2
     sh      a2, 0x2(at)
     b       @@loop
     addiu   at, at, 0x4
